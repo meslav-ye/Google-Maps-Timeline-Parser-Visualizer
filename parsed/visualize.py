@@ -3,100 +3,64 @@ import csv
 import os
 
 rootdir = os.getcwd()
-x = []
-y = []
 
 #Cycling
 CYCLING = "CYCLING"
-distanceByMonthCycling = dict()
-distanceByYearCycling = dict()
+distanceCycling = dict()
 
 #Walking
 WALKING = "WALKING"
-distanceByMonthWalking = dict()
-distanceByYearWalking = dict()
+distanceWalking = dict()
 
 #Vehicle
 IN_PASSENGER_VEHICLE = "IN_PASSENGER_VEHICLE"
-distanceByMonthVehicle = dict()
-distanceByYearVehicle = dict()
+distanceVehicle = dict()
 
 #Unknown
 UNKNOWN1 = "UNKNOWN"
 UNKNOWN2 = "UNKNOWN_ACTIVITY_TYPE"
-distanceByYearUnknown = dict()
-distanceByMonthUnknown = dict()
+distanceUnknown = dict()
 
 #Train
 TRAIN = "IN_TRAIN"
-distanceByYearTrain = dict()
-distanceByMonthTrain = dict()
+distanceTrain = dict()
 
+#All
 allSum = 0
+
 def readFiles(file, name):
-    year = name[:4]
     global allSum
     with open(file,'r') as csvfile:
         lines = csv.reader(csvfile, delimiter=',')
         for row in lines:
-            month = row[0].split("-")[1]
+            date = row[0]
             dayDistance = int(row[1])/1000
             allSum = allSum + dayDistance
             if(row[2]==CYCLING):
-
-                if month in distanceByMonthCycling:
-                    distanceByMonthCycling[month] = dayDistance + distanceByMonthCycling[month]
+                if date in distanceCycling:
+                    distanceCycling[date] = dayDistance + distanceCycling[date]
                 else:
-                    distanceByMonthCycling[month] = dayDistance
-
-                if year in distanceByYearCycling:
-                    distanceByYearCycling[year] = dayDistance + distanceByYearCycling[year]
-                else:
-                    distanceByYearCycling[year] = dayDistance
+                    distanceCycling[date] = dayDistance
             elif(row[2]==WALKING):
-
-                if month in distanceByMonthWalking:
-                    distanceByMonthWalking[month] = dayDistance + distanceByMonthWalking[month]
+                if date in distanceWalking:
+                    distanceWalking[date] = dayDistance + distanceWalking[date]
                 else:
-                    distanceByMonthWalking[month] = dayDistance
-
-                if year in distanceByYearWalking:
-                    distanceByYearWalking[year] = dayDistance + distanceByYearWalking[year]
-                else:
-                    distanceByYearWalking[year] = dayDistance
+                    distanceWalking[date] = dayDistance
             elif(row[2]==IN_PASSENGER_VEHICLE):
-
-                if month in distanceByMonthVehicle:
-                    distanceByMonthVehicle[month] = dayDistance + distanceByMonthVehicle[month]
+                if date in distanceVehicle:
+                    distanceVehicle[date] = dayDistance + distanceVehicle[date]
                 else:
-                    distanceByMonthVehicle[month] = dayDistance
-
-                if year in distanceByYearVehicle:
-                    distanceByYearVehicle[year] = dayDistance + distanceByYearVehicle[year]
-                else:
-                    distanceByYearVehicle[year] = dayDistance
+                    distanceVehicle[date] = dayDistance
             elif(row[2]==UNKNOWN1 or row[2]==UNKNOWN2):
-
-                if month in distanceByMonthUnknown:
-                    distanceByMonthUnknown[month] = dayDistance + distanceByMonthUnknown[month]
+                if date in distanceUnknown:
+                    distanceUnknown[date] = dayDistance + distanceUnknown[date]
                 else:
-                    distanceByMonthUnknown[month] = dayDistance
-
-                if year in distanceByYearUnknown:
-                    distanceByYearUnknown[year] = dayDistance + distanceByYearUnknown[year]
-                else:
-                    distanceByYearUnknown[year] = dayDistance
+                    distanceUnknown[date] = dayDistance
             elif(row[2]==TRAIN):
-
-                if month in distanceByMonthTrain:
-                    distanceByMonthTrain[month] = dayDistance + distanceByMonthTrain[month]
+                if date in distanceTrain:
+                    distanceTrain[date] = dayDistance + distanceTrain[date]
                 else:
-                    distanceByMonthTrain[month] = dayDistance
-
-                if year in distanceByYearTrain:
-                    distanceByYearTrain[year] = dayDistance + distanceByYearTrain[year]
-                else:
-                    distanceByYearTrain[year] = dayDistance
+                    distanceTrain[date] = dayDistance
 
 def getSumDistance(distance):
     sum = 0
@@ -108,41 +72,76 @@ def drawPieChart(allTypes):
     x = []
     y = []
     for k, v in allTypes.items():
-
         x.append(k)
         y.append(getSumDistance(v))
-
     plt.pie(y,labels = x,autopct = '%.2f%%')
     plt.title('Distance by type', fontsize = 20)
-    plt.savefig(f"PIE_CHART.png")
+    figName = f"PIE_CHART.png"
+    if os.path.exists(figName):
+        os.remove(figName)
+    plt.savefig(figName)
     plt.show()
     plt.clf()
     plt.cla()
 
-def plotDistanceGraph(distance, name, time):
-    sum = getSumDistance(distance)
-    x=[]
-    y=[]
-    distance = dict(sorted(distance.items()))
+def getPeriodDistance(distance, period):
+    d = dict()
     for k, v in distance.items():
-        x.append(k)
-        y.append(v)
+        if(period == "YEAR"):
+            year = k.split("-")[0]
+            if year in d:
+                d[year] = v+d[year]
+            else:
+                d[year] = v
+        elif(period == "MONTH"):
+            month = k.split("-")[1]
+            if month in d:
+                d[month] = v+d[month]
+            else:
+                d[month] = v
+    return d
 
-    if(time == "YEAR"):
+def saveShowPlot(x,y,name,period, sum):
+    if(period == "YEAR"):
         coloring = 'g'
     else:
         coloring = 'b'
     plt.bar(x, y, color = coloring, width = 0.70,label = f"{name} distance")
-    plt.xlabel(f'{time}')
+    plt.xlabel(f'{period}')
     plt.ylabel('Distance in km')
     plt.title('Distance sum = ' +str(round(sum,2))+' km', fontsize = 20)
     plt.grid()
     plt.legend()
-    plt.savefig(f"{name}_BY_{time}.png")
+    figName = f"{name}_BY_{period}.png"
+    if os.path.exists(figName):
+        os.remove(figName)
+    plt.savefig(figName)
     plt.show()
     plt.clf()
     plt.cla()
 
+def plotDistanceGraph(distance, name):
+    periodMonth = "MONTH"
+    periodYear = "YEAR"
+    x = []
+    y = []
+    yearDict = dict(sorted(getPeriodDistance(distance, periodYear).items()))
+    monthDict = dict(sorted(getPeriodDistance(distance, periodMonth).items()))
+    sumYear = getSumDistance(yearDict)
+    sumMonth = getSumDistance(monthDict)
+
+    for k,v in yearDict.items():
+        x.append(k)
+        y.append(v)
+    saveShowPlot(x,y,name,periodYear, sumYear)
+
+    x = []
+    y = []
+
+    for k,v in monthDict.items():
+        x.append(k)
+        y.append(v)
+    saveShowPlot(x,y,name, periodMonth, sumMonth)
 
 files = [os.path.join(root, name)
          for root, dirs, files in os.walk(rootdir)
@@ -152,23 +151,16 @@ for file in files:
     name = os.path.basename(file)
     readFiles(file,name)
 
-yearString = "YEAR"
-monthString = "MONTH"
 allTypes = dict()
-allTypes[CYCLING] = distanceByYearCycling
-allTypes[WALKING] = distanceByYearWalking
-#allTypes[UNKNOWN1] = distanceByYearUnknown
-allTypes[TRAIN] = distanceByYearTrain
-allTypes[IN_PASSENGER_VEHICLE] = distanceByYearVehicle
+allTypes[CYCLING] = distanceCycling
+allTypes[WALKING] = distanceWalking
+allTypes[UNKNOWN1] = distanceUnknown
+allTypes[TRAIN] = distanceTrain
+allTypes[IN_PASSENGER_VEHICLE] = distanceVehicle
 drawPieChart(allTypes)
-plotDistanceGraph(distanceByYearCycling, CYCLING, yearString)
-plotDistanceGraph(distanceByYearWalking, WALKING, yearString)
-plotDistanceGraph(distanceByYearUnknown, UNKNOWN1, yearString)
-plotDistanceGraph(distanceByYearTrain, TRAIN, yearString)
-plotDistanceGraph(distanceByYearVehicle, IN_PASSENGER_VEHICLE, yearString)
-plotDistanceGraph(distanceByMonthTrain, TRAIN, monthString)
-plotDistanceGraph(distanceByMonthUnknown, UNKNOWN1, monthString)
-plotDistanceGraph(distanceByMonthVehicle, IN_PASSENGER_VEHICLE, monthString)
-plotDistanceGraph(distanceByMonthWalking, WALKING, monthString)
-plotDistanceGraph(distanceByMonthCycling, CYCLING,monthString)
+plotDistanceGraph(distanceCycling, CYCLING)
+plotDistanceGraph(distanceVehicle, IN_PASSENGER_VEHICLE)
+plotDistanceGraph(distanceTrain, TRAIN)
+plotDistanceGraph(distanceUnknown, UNKNOWN1)
+plotDistanceGraph(distanceWalking, WALKING)
 print("All distance sum = "+str(allSum) + " km")
